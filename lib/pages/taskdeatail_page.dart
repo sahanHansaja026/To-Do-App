@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_null_comparison
+
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 
@@ -52,6 +54,8 @@ class TaskDetails extends StatelessWidget {
             _buildDetailCard(
               icon: Icons.access_time,
               label: "Deadline Time",
+              // ignore: duplicate_ignore
+              // ignore: unnecessary_null_comparison
               content: getTaskDetail('deadline') != null
                   ? task['deadline'].split(' ')[1] // Extract time part
                   : "Not set",
@@ -166,12 +170,16 @@ class TaskDetails extends StatelessWidget {
     try {
       // Assuming task contains a unique 'id' key for the Firebase document ID
       await tasksRef.child(task['id']).remove();
+      // ignore: use_build_context_synchronously
       Navigator.of(context).pop(); // Close the dialog
+      // ignore: use_build_context_synchronously
       Navigator.of(context).pop(); // Go back to the previous screen
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Task deleted successfully")),
       );
     } catch (error) {
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Failed to delete task: $error")),
       );

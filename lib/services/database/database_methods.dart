@@ -7,7 +7,9 @@ class DatabaseMethod {
     try {
       await _firestore.collection("tasks").doc(taskId).set(taskInfoMap);
     } catch (e) {
+      // ignore: avoid_print
       print(e.toString());
+      // ignore: use_rethrow_when_possible
       throw e; // Re-throw the error for further handling if necessary
     }
   }

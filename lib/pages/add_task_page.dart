@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:random_string/random_string.dart';
 import 'package:taskmanagerr/services/database/database_methods.dart';
@@ -130,7 +129,9 @@ class _StudentTaskManagerState extends State<StudentTaskManager> {
         clearFields();
       });
     } catch (e) {
+      // ignore: use_build_context_synchronously
       Navigator.pop(context);
+      // ignore: avoid_print
       print(e);
     }
   }
@@ -148,7 +149,7 @@ class _StudentTaskManagerState extends State<StudentTaskManager> {
           ),
         ),
         centerTitle: true,
-        backgroundColor: Color.fromARGB(255, 2, 56, 255),
+        backgroundColor: const Color.fromARGB(255, 2, 56, 255),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -179,6 +180,7 @@ class _StudentTaskManagerState extends State<StudentTaskManager> {
                   trailing: const Icon(Icons.calendar_today, color: Colors.teal),
                   onTap: () async {
                     await selectDeadline(context); // Select date first
+                    // ignore: use_build_context_synchronously
                     await selectTime(context); // Select time after date
                   },
                 ),
@@ -221,7 +223,7 @@ class _StudentTaskManagerState extends State<StudentTaskManager> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color.fromARGB(255, 3, 31, 78),
+                        backgroundColor: const Color.fromARGB(255, 3, 31, 78),
                         padding: const EdgeInsets.symmetric(
                           vertical: 14,
                           horizontal: 48,
@@ -264,7 +266,7 @@ class _StudentTaskManagerState extends State<StudentTaskManager> {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color.fromARGB(255, 3, 31, 78),
+                        backgroundColor: const Color.fromARGB(255, 3, 31, 78),
                         padding: const EdgeInsets.symmetric(
                           vertical: 14,
                           horizontal: 48,

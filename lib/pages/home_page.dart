@@ -23,8 +23,11 @@ class _HomePageState extends State<HomePage> {
 
   void fetchTasks() async {
     setState(() => isLoading = true);
-    QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection("tasks").get();
-    tasks = querySnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+    QuerySnapshot querySnapshot =
+        await FirebaseFirestore.instance.collection("tasks").get();
+    tasks = querySnapshot.docs
+        .map((doc) => doc.data() as Map<String, dynamic>)
+        .toList();
     setState(() => isLoading = false);
   }
 
@@ -67,9 +70,12 @@ class _HomePageState extends State<HomePage> {
                             borderRadius: BorderRadius.circular(15),
                           ),
                           filled: true,
-                          fillColor: Colors.grey[200],
+                          fillColor: Theme.of(context)
+                              .colorScheme
+                              .secondary, // Fixed this line
                         ),
                       ),
+
                       const SizedBox(height: 16),
                       // Task Filter Buttons
                       Row(
@@ -113,12 +119,13 @@ class _HomePageState extends State<HomePage> {
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => const StudentTaskManager(), // Navigate to AddTask page
+              builder: (context) =>
+                  const StudentTaskManager(), // Navigate to AddTask page
             ),
           );
         },
         child: const Icon(Icons.add),
-        backgroundColor: const Color.fromARGB(255, 3, 31, 78),
+        backgroundColor: Color.fromARGB(255, 15, 78, 188),
       ),
     );
   }
@@ -144,6 +151,7 @@ class TaskCard extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(15),
         ),
+        color: Theme.of(context).colorScheme.primary,
         elevation: 4,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -152,30 +160,22 @@ class TaskCard extends StatelessWidget {
             children: [
               Text(
                 task['taskName'],
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .inversePrimary, // Access theme color here
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                task['description'],
-                style: const TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "Deadline: ${task['deadline'] != null ? task['deadline'].toString().split("T")[0] : "Not set"}",
-                style: const TextStyle(color: Colors.grey),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "Priority: ${task['priority']}",
-                style: const TextStyle(color: Colors.grey),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "Category: ${task['category']}",
-                style: const TextStyle(color: Colors.grey),
+                "Deadline: ${task['deadline'] != null ? "${task['deadline'].split("T")[0]} ${task['deadline'].split("T")[1].split(".")[0]}" : "Not set"}",
+                style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .inversePrimary, // Dynamically get color from theme
+                ),
               ),
             ],
           ),

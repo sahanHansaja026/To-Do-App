@@ -49,6 +49,7 @@ class DatabaseMethods {
   }
 }
 
+// ignore: use_key_in_widget_constructors
 class TaskList extends StatelessWidget {
   final DatabaseMethods databaseMethods = DatabaseMethods();
 
