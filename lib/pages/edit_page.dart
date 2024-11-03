@@ -1,6 +1,7 @@
-// ignore_for_file: unused_local_variable, library_private_types_in_public_api
-
 import 'package:flutter/material.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:taskmanagerr/services/database/edit_task_page.dart';
+
 
 class EditTaskPage extends StatefulWidget {
   final Map<String, dynamic> task;
@@ -12,175 +13,249 @@ class EditTaskPage extends StatefulWidget {
 }
 
 class _EditTaskPageState extends State<EditTaskPage> {
-  late TextEditingController _nameController;
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _taskNameController;
   late TextEditingController _descriptionController;
-  late TextEditingController _priorityController;
-  late TextEditingController _categoryController;
-  late TextEditingController _dateController;
-  late TextEditingController _timeController;
+  late TextEditingController _deadlineController;
+  String? _selectedPriority;
+  String? _selectedCategory;
+
+  final List<String> categories = [
+    "Select Category",
+    "Assignment",
+    "Project",
+    "Study",
+    "Personal"
+  ];
+  final List<String> priorities = ["Select Priority", "High", "Medium", "Low"];
+
+  bool _isLoading = false; // Loading indicator state
+  final TaskService _taskService = TaskService(); // Instantiate TaskService
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.task['taskName']);
+    _taskNameController = TextEditingController(text: widget.task['taskName']);
     _descriptionController = TextEditingController(text: widget.task['description']);
-    _priorityController = TextEditingController(text: widget.task['priority']);
-    _categoryController = TextEditingController(text: widget.task['category']);
-
-    final deadlineParts = widget.task['deadline'].split(" ");
-    DateTime deadlineDate = DateTime.parse(deadlineParts[0]);
-    String formattedDate = "${deadlineDate.day.toString().padLeft(2, '0')}/${(deadlineDate.month).toString().padLeft(2, '0')}/${deadlineDate.year.toString().substring(2)}";
-
-    _dateController = TextEditingController(text: formattedDate);
-    _timeController = TextEditingController(text: deadlineParts[1]);
+    _deadlineController = TextEditingController(text: widget.task['deadline']);
+    _selectedPriority = widget.task['priority'];
+    _selectedCategory = widget.task['category'];
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _taskNameController.dispose();
     _descriptionController.dispose();
-    _priorityController.dispose();
-    _categoryController.dispose();
-    _dateController.dispose();
-    _timeController.dispose();
+    _deadlineController.dispose();
     super.dispose();
-  }
-
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.parse(widget.task['deadline'].split(" ")[0]),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null) {
-      setState(() {
-        _dateController.text = "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year.toString().substring(2)}";
-      });
-    }
-  }
-
-  Future<void> _selectTime(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(DateTime.parse("1970-01-01T${widget.task['deadline'].split(" ")[1]}")),
-    );
-    if (picked != null) {
-      setState(() {
-        final formattedTime = "${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}:00.000";
-        _timeController.text = formattedTime;
-      });
-    }
-  }
-
-  Future<void> _updateTask() async {
-    try {
-      List<String> dateParts = _dateController.text.split("/");
-      String formattedForStorage = "20${dateParts[2]}-${dateParts[1]}-${dateParts[0]}T${_timeController.text}";
-
-      // Uncomment and update with your Firebase update logic
-      // await FirebaseFirestore.instance.collection('tasks').doc(widget.task['id']).update({
-      //   'taskName': _nameController.text,
-      //   'description': _descriptionController.text,
-      //   'priority': _priorityController.text,
-      //   'category': _categoryController.text,
-      //   'deadline': formattedForStorage,
-      // });
-
-      // If the update is successful
-      _showAlert("Task updated successfully!", Colors.green);
-      Navigator.of(context).pop();
-    } catch (error) {
-      // If the update fails
-      _showAlert("Failed to update task. Please try again.", Colors.red);
-    }
-  }
-
-  void _showAlert(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: color,
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Edit Task"),
+        title: const Text('Edit Task'),
         backgroundColor: const Color.fromARGB(255, 2, 56, 255),
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(screenSize.width * 0.05),
-        child: Card(
-          elevation: 8,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Edit Your Task", style: Theme.of(context).textTheme.titleLarge?.copyWith(color: const Color.fromARGB(255, 2, 56, 255), fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                _buildTextField(_nameController, "Task Name", Icons.task),
-                const SizedBox(height: 16),
-                _buildTextField(_descriptionController, "Description", Icons.description, isMultiline: true),
-                const SizedBox(height: 16),
-                _buildTextField(_priorityController, "Priority", Icons.priority_high),
-                const SizedBox(height: 16),
-                _buildTextField(_categoryController, "Category", Icons.category),
-                const SizedBox(height: 16),
-                _buildTextField(_dateController, "Date (dd/MM/yy)", Icons.calendar_today, isReadOnly: true, onTap: () => _selectDate(context)),
-                const SizedBox(height: 16),
-                _buildTextField(_timeController, "Time (HH:mm:ss.sss)", Icons.access_time, isReadOnly: true, onTap: () => _selectTime(context)),
-                const SizedBox(height: 24),
-                Center(
-                  child: ElevatedButton(
-                    onPressed: _updateTask,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 2, 56, 255),
-                      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              _buildTextField(
+                controller: _taskNameController,
+                label: 'Task Name',
+                icon: Icons.task,
+              ),
+              const SizedBox(height: 16),
+              _buildTextField(
+                controller: _descriptionController,
+                label: 'Description',
+                icon: Icons.description,
+              ),
+              const SizedBox(height: 16),
+              _buildDateTimeField(),
+              const SizedBox(height: 16),
+              _buildDropdownField(
+                label: 'Priority',
+                value: _selectedPriority,
+                items: priorities,
+                onChanged: (newValue) {
+                  setState(() {
+                    _selectedPriority = newValue;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              _buildDropdownField(
+                label: 'Category',
+                value: _selectedCategory,
+                items: categories,
+                onChanged: (newValue) {
+                  setState(() {
+                    _selectedCategory = newValue;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : ElevatedButton(
+                      onPressed: _saveTask,
+                      child: const Text('Save Changes'),
                     ),
-                    child: const Text("Save Changes", style: TextStyle(fontSize: 16)),
-                  ),
-                ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool isMultiline = false, bool isReadOnly = false, VoidCallback? onTap}) {
-    return TextField(
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+  }) {
+    return TextFormField(
       controller: controller,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: const Color.fromARGB(255, 2, 56, 255)),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color.fromARGB(255, 2, 56, 255)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color.fromARGB(255, 2, 56, 255), width: 2),
-        ),
-        filled: true,
-        fillColor: Colors.white,
+        border: const OutlineInputBorder(),
+        prefixIcon: Icon(icon),
       ),
-      maxLines: isMultiline ? 3 : 1,
-      readOnly: isReadOnly,
-      onTap: onTap,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter $label';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildDateTimeField() {
+    return TextFormField(
+      controller: _deadlineController,
+      decoration: InputDecoration(
+        labelText: 'Deadline',
+        border: const OutlineInputBorder(),
+        suffixIcon: IconButton(
+          icon: const Icon(Icons.calendar_today),
+          onPressed: _selectDateTime,
+        ),
+      ),
+      readOnly: true,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please select a deadline';
+        }
+        return null;
+      },
+    );
+  }
+
+  Future<void> _selectDateTime() async {
+    final DateTime? selectedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+
+    if (selectedDate != null) {
+      final TimeOfDay? selectedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
+
+      if (selectedTime != null) {
+        final DateTime dateTime = DateTime(
+          selectedDate.year,
+          selectedDate.month,
+          selectedDate.day,
+          selectedTime.hour,
+          selectedTime.minute,
+        );
+        _deadlineController.text = dateTime.toString();
+      }
+    }
+  }
+
+  Widget _buildDropdownField({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
+      items: items.map((String category) {
+        return DropdownMenuItem<String>(
+          value: category,
+          child: Text(category),
+        );
+      }).toList(),
+      onChanged: onChanged,
+      validator: (value) {
+        if (value == null || value == "Select $label") {
+          return 'Please select $label';
+        }
+        return null;
+      },
+    );
+  }
+
+  Future<void> _saveTask() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true; // Start loading
+      });
+
+      final updatedTask = {
+        'taskName': _taskNameController.text,
+        'description': _descriptionController.text,
+        'deadline': _deadlineController.text,
+        'priority': _selectedPriority,
+        'category': _selectedCategory,
+      };
+
+      try {
+        await _taskService.updateTask(widget.task['id'], updatedTask);
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Task updated successfully")),
+        );
+      } catch (e) {
+        _showErrorDialog("Failed to update task: $e");
+      } finally {
+        setState(() {
+          _isLoading = false; // Stop loading
+        });
+      }
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Error'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:taskmanagerr/pages/edit_page.dart';
 
 class TaskDetails extends StatelessWidget {
   final Map<String, dynamic> task;
@@ -54,8 +55,6 @@ class TaskDetails extends StatelessWidget {
             _buildDetailCard(
               icon: Icons.access_time,
               label: "Deadline Time",
-              // ignore: duplicate_ignore
-              // ignore: unnecessary_null_comparison
               content: getTaskDetail('deadline') != null
                   ? task['deadline'].split(' ')[1] // Extract time part
                   : "Not set",
@@ -87,6 +86,11 @@ class TaskDetails extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: () {
                 // Navigate to edit page
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => EditTaskPage(task: task),
+                  ),
+                );
               },
               icon: const Icon(Icons.edit, color: Colors.blue),
               label: const Text(

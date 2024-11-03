@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:taskmanagerr/components/my_drawer.dart';
 import 'package:taskmanagerr/pages/add_task_page.dart';
 import 'package:taskmanagerr/pages/taskdeatail_page.dart';
+import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,7 +14,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> tasks = [];
+  List<Map<String, dynamic>> filteredTasks = [];
   bool isLoading = true;
+  String filter = 'All'; // Default filter is "All"
 
   @override
   void initState() {
@@ -28,7 +31,40 @@ class _HomePageState extends State<HomePage> {
     tasks = querySnapshot.docs
         .map((doc) => doc.data() as Map<String, dynamic>)
         .toList();
+    applyFilter(); // Apply filter after fetching tasks
     setState(() => isLoading = false);
+  }
+
+  void applyFilter() {
+    final now = DateTime.now();
+    setState(() {
+      if (filter == 'All') {
+        filteredTasks = tasks;
+      } else if (filter == 'Completed') {
+        // Filter tasks where deadline has passed
+        filteredTasks = tasks.where((task) {
+          final deadline = _parseDeadline(task['deadline']);
+          return deadline != null && deadline.isBefore(now);
+        }).toList();
+      } else if (filter == 'Pending') {
+        // Filter tasks where deadline is in the future
+        filteredTasks = tasks.where((task) {
+          final deadline = _parseDeadline(task['deadline']);
+          return deadline != null && deadline.isAfter(now);
+        }).toList();
+      }
+    });
+  }
+
+  // Helper function to parse deadline from string to DateTime
+  DateTime? _parseDeadline(String? deadlineString) {
+    if (deadlineString == null) return null;
+    try {
+      return DateFormat("yyyy-MM-dd'T'HH:mm:ss.sss HH:mm").parse(deadlineString);
+    } catch (e) {
+      print("Error parsing deadline: $e");
+      return null;
+    }
   }
 
   @override
@@ -52,7 +88,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      drawer: const MyDrawer(), // Add the drawer here
+      drawer: const MyDrawer(),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : tasks.isEmpty
@@ -70,44 +106,26 @@ class _HomePageState extends State<HomePage> {
                             borderRadius: BorderRadius.circular(15),
                           ),
                           filled: true,
-                          fillColor: Theme.of(context)
-                              .colorScheme
-                              .secondary, // Fixed this line
+                          fillColor: Theme.of(context).colorScheme.secondary,
                         ),
                       ),
-
                       const SizedBox(height: 16),
                       // Task Filter Buttons
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          ElevatedButton(
-                            onPressed: () {
-                              // Filter logic here
-                            },
-                            child: const Text("All Tasks"),
-                          ),
-                          ElevatedButton(
-                            onPressed: () {
-                              // Filter logic here
-                            },
-                            child: const Text("Completed"),
-                          ),
-                          ElevatedButton(
-                            onPressed: () {
-                              // Filter logic here
-                            },
-                            child: const Text("Pending"),
-                          ),
+                          _buildFilterButton("All Tasks", "All"),
+                          _buildFilterButton("Completed", "Completed"),
+                          _buildFilterButton("Pending", "Pending"),
                         ],
                       ),
                       const SizedBox(height: 16),
                       // Task List
                       Expanded(
                         child: ListView.builder(
-                          itemCount: tasks.length,
+                          itemCount: filteredTasks.length,
                           itemBuilder: (context, index) {
-                            final task = tasks[index];
+                            final task = filteredTasks[index];
                             return TaskCard(task: task);
                           },
                         ),
@@ -119,14 +137,32 @@ class _HomePageState extends State<HomePage> {
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) =>
-                  const StudentTaskManager(), // Navigate to AddTask page
+              builder: (context) => const StudentTaskManager(),
             ),
           );
         },
         child: const Icon(Icons.add),
-        backgroundColor: Color.fromARGB(255, 15, 78, 188),
+        backgroundColor: const Color.fromARGB(255, 15, 78, 188),
       ),
+    );
+  }
+
+  // Helper method to build filter buttons with highlighting based on the current filter
+  Widget _buildFilterButton(String label, String filterValue) {
+    return ElevatedButton(
+      onPressed: () {
+        setState(() {
+          filter = filterValue;
+          applyFilter();
+        });
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor:
+            filter == filterValue ? Colors.blueAccent : Colors.grey[300],
+        foregroundColor:
+            filter == filterValue ? Colors.white : Colors.black,
+      ),
+      child: Text(label),
     );
   }
 }
@@ -138,6 +174,16 @@ class TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Extract date and time from the deadline string
+    String deadlineDate = "";
+    String deadlineTime = "";
+
+    if (task['deadline'] != null) {
+      List<String> deadlineParts = task['deadline'].split(" ");
+      deadlineDate = deadlineParts[0].split("T")[0];
+      deadlineTime = deadlineParts[1];
+    }
+
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
@@ -163,18 +209,20 @@ class TaskCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .inversePrimary, // Access theme color here
+                  color: Theme.of(context).colorScheme.inversePrimary,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                "Deadline: ${task['deadline'] != null ? "${task['deadline'].split("T")[0]} ${task['deadline'].split("T")[1].split(".")[0]}" : "Not set"}",
+                "Date: $deadlineDate",
                 style: TextStyle(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .inversePrimary, // Dynamically get color from theme
+                  color: Theme.of(context).colorScheme.inversePrimary,
+                ),
+              ),
+              Text(
+                "Time: $deadlineTime",
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.inversePrimary,
                 ),
               ),
             ],
