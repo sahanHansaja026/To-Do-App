@@ -3,7 +3,6 @@ import 'package:taskmanagerr/components/my_button.dart';
 import 'package:taskmanagerr/components/my_textfield.dart';
 import 'package:taskmanagerr/services/auth/auth_service.dart';
 
-
 class LoginPage extends StatefulWidget {
   final void Function()? onTap;
 
@@ -68,75 +67,77 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Logo
-          Icon(
-            Icons.lock_open_rounded,
-            size: 72,
-            color: Theme.of(context).colorScheme.inversePrimary,
-          ),
-          const SizedBox(height: 10),
-
-          // App slogan
-          Text(
-            "Student Enrollment System",
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight:FontWeight.bold,
+      body: SingleChildScrollView( // Wrap the column with SingleChildScrollView
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Logo
+            Icon(
+              Icons.lock_open_rounded,
+              size: 72,
               color: Theme.of(context).colorScheme.inversePrimary,
             ),
-          ),
-          const SizedBox(height: 10),
+            const SizedBox(height: 10),
 
-          // Email field
-          MyTextfield(
-            controller: emailController,
-            hintText: "Email",
-            obscureText: false,
-          ),
-          const SizedBox(height: 10),
-
-          // Password textfield
-          MyTextfield(
-            controller: passwordController,
-            hintText: "Password",
-            obscureText: true,
-          ),
-          const SizedBox(height: 10),
-
-          // Sign in button
-          MyButton(
-            text: "Sign in",
-            onTap: login,
-          ),
-          const SizedBox(height: 20),
-
-          // Go to the registration page
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                "Not a member?",
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.inversePrimary,
-                ),
+            // App slogan
+            Text(
+              "EduOrganizer",
+              style: TextStyle(
+                fontSize: 45,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.inversePrimary,
               ),
-              const SizedBox(width: 4),
-              GestureDetector(
-                onTap: widget.onTap,
-                child: Text(
-                  "Register now",
+            ),
+            const SizedBox(height: 10),
+
+            // Email field
+            MyTextfield(
+              controller: emailController,
+              hintText: "Email",
+              obscureText: false,
+            ),
+            const SizedBox(height: 10),
+
+            // Password textfield
+            MyTextfield(
+              controller: passwordController,
+              hintText: "Password",
+              obscureText: true,
+            ),
+            const SizedBox(height: 10),
+
+            // Sign in button
+            MyButton(
+              text: "Sign in",
+              onTap: login,
+            ),
+            const SizedBox(height: 20),
+
+            // Go to the registration page
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "Not a member?",
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.inversePrimary,
-                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(width: 4),
+                GestureDetector(
+                  onTap: widget.onTap,
+                  child: Text(
+                    "Register now",
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.inversePrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

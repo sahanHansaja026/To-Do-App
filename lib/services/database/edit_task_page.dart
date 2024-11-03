@@ -1,14 +1,13 @@
-import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TaskService {
-  final DatabaseReference tasksRef = FirebaseDatabase.instance.ref().child('tasks');
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  Future<void> updateTask(String taskId, Map<String, dynamic> updatedData) async {
+  Future<void> updateTask(String taskId, Map<String, dynamic> updatedTask) async {
     try {
-      await tasksRef.child(taskId).update(updatedData);
-    } catch (error) {
-      print("Failed to update task: $error");
-      throw Exception("Failed to update task");
+      await _db.collection('tasks').doc(taskId).update(updatedTask);
+    } catch (e) {
+      throw Exception('Failed to update task: $e');
     }
   }
 }

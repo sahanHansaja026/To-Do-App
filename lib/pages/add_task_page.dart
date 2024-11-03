@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:random_string/random_string.dart';
+import 'package:taskmanagerr/services/auth/auth_service.dart';
 import 'package:taskmanagerr/services/database/database_methods.dart';
 
 class StudentTaskManager extends StatefulWidget {
@@ -13,8 +14,11 @@ class StudentTaskManager extends StatefulWidget {
 class _StudentTaskManagerState extends State<StudentTaskManager> {
   final TextEditingController taskNameController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
+  final AuthService authService = AuthService();
+  late final String userEmail; // Store user email
+
   DateTime? selectedDeadline;
-  TimeOfDay? selectedTime;  // Variable to hold selected time
+  TimeOfDay? selectedTime;
 
   String selectedPriority = "Select Priority";
   String selectedCategory = "Select Category";
@@ -22,6 +26,12 @@ class _StudentTaskManagerState extends State<StudentTaskManager> {
 
   final List<String> categories = ["Select Category", "Assignment", "Project", "Study", "Personal"];
   final List<String> priorities = ["Select Priority", "High", "Medium", "Low"];
+
+  @override
+  void initState() {
+    super.initState();
+    userEmail = authService.getUserEmail(); // Get user email from AuthService
+  }
 
   void showLoadingDialog(BuildContext context) {
     showDialog(
@@ -50,7 +60,7 @@ class _StudentTaskManagerState extends State<StudentTaskManager> {
     descriptionController.clear();
     setState(() {
       selectedDeadline = null;
-      selectedTime = null;  // Clear the selected time
+      selectedTime = null;
       selectedPriority = "Select Priority";
       selectedCategory = "Select Category";
       currentStep = 0;
@@ -78,7 +88,7 @@ class _StudentTaskManagerState extends State<StudentTaskManager> {
     );
     if (picked != null) {
       setState(() {
-        selectedTime = picked;  // Store the selected time
+        selectedTime = picked;
       });
     }
   }
@@ -114,6 +124,7 @@ class _StudentTaskManagerState extends State<StudentTaskManager> {
         "priority": selectedPriority,
         "category": selectedCategory,
         "taskId": id,
+        "userEmail": userEmail, // Store user email in task data
       };
 
       await DatabaseMethod().addTaskDetails(taskInfoMap, id).then((value) {
@@ -179,9 +190,9 @@ class _StudentTaskManagerState extends State<StudentTaskManager> {
                   ),
                   trailing: const Icon(Icons.calendar_today, color: Colors.teal),
                   onTap: () async {
-                    await selectDeadline(context); // Select date first
+                    await selectDeadline(context);
                     // ignore: use_build_context_synchronously
-                    await selectTime(context); // Select time after date
+                    await selectTime(context);
                   },
                 ),
               ),
@@ -239,7 +250,6 @@ class _StudentTaskManagerState extends State<StudentTaskManager> {
                     )
                   : ElevatedButton(
                       onPressed: () {
-                        // Show the preview when the Submit button is clicked
                         showDialog(
                           context: context,
                           builder: (context) {
@@ -249,14 +259,14 @@ class _StudentTaskManagerState extends State<StudentTaskManager> {
                               actions: [
                                 TextButton(
                                   onPressed: () {
-                                    Navigator.pop(context); // Close the preview dialog
+                                    Navigator.pop(context);
                                   },
                                   child: const Text("Edit"),
                                 ),
                                 TextButton(
                                   onPressed: () {
-                                    Navigator.pop(context); // Close the preview dialog
-                                    submitTask(); // Proceed to submit the task
+                                    Navigator.pop(context);
+                                    submitTask();
                                   },
                                   child: const Text("Confirm"),
                                 ),
@@ -310,11 +320,16 @@ class _StudentTaskManagerState extends State<StudentTaskManager> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            Text("Task Name: ${taskNameController.text}"),
-            Text("Description: ${descriptionController.text}"),
-            Text("Deadline: ${selectedDeadline != null ? "${selectedDeadline!.day}-${selectedDeadline!.month}-${selectedDeadline!.year} ${selectedTime != null ? "${selectedTime!.hour}:${selectedTime!.minute.toString().padLeft(2, '0')}" : ""}" : "Not Set"}"),
-            Text("Priority: $selectedPriority"),
-            Text("Category: $selectedCategory"),
+            buildPreviewRow("Task Name", taskNameController.text),
+            buildPreviewRow("Description", descriptionController.text),
+            buildPreviewRow(
+              "Deadline",
+              selectedDeadline != null 
+                  ? "${selectedDeadline!.day}-${selectedDeadline!.month}-${selectedDeadline!.year} ${selectedTime != null ? "${selectedTime!.hour}:${selectedTime!.minute.toString().padLeft(2, '0')}" : ""}"
+                  : "N/A",
+            ),
+            buildPreviewRow("Priority", selectedPriority),
+            buildPreviewRow("Category", selectedCategory),
           ],
         ),
       ),
@@ -323,72 +338,83 @@ class _StudentTaskManagerState extends State<StudentTaskManager> {
 
   Widget buildPreviewContent() {
     return Column(
-      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text("Task Name: ${taskNameController.text}"),
-        Text("Description: ${descriptionController.text}"),
-        Text("Deadline: ${selectedDeadline != null ? "${selectedDeadline!.day}-${selectedDeadline!.month}-${selectedDeadline!.year} ${selectedTime != null ? "${selectedTime!.hour}:${selectedTime!.minute.toString().padLeft(2, '0')}" : ""}" : "Not Set"}"),
-        Text("Priority: $selectedPriority"),
-        Text("Category: $selectedCategory"),
+        buildPreviewRow("Task Name", taskNameController.text),
+        buildPreviewRow("Description", descriptionController.text),
+        buildPreviewRow(
+          "Deadline",
+          selectedDeadline != null 
+              ? "${selectedDeadline!.day}-${selectedDeadline!.month}-${selectedDeadline!.year} ${selectedTime != null ? "${selectedTime!.hour}:${selectedTime!.minute.toString().padLeft(2, '0')}" : ""}"
+              : "N/A",
+        ),
+        buildPreviewRow("Priority", selectedPriority),
+        buildPreviewRow("Category", selectedCategory),
       ],
     );
   }
 
-  Widget buildInputCard(String title, String hint, TextEditingController controller, {int maxLines = 1}) {
+  Widget buildInputCard(String label, String hint, TextEditingController controller, {int maxLines = 1}) {
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
       ),
       elevation: 4,
-      child: TextField(
-        controller: controller,
-        maxLines: maxLines,
-        decoration: InputDecoration(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(color: Colors.teal, width: 1.0),
+      child: ListTile(
+        title: TextField(
+          controller: controller,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            labelText: label,
+            hintText: hint,
+            border: InputBorder.none,
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(color: Colors.teal, width: 1.0),
-          ),
-          hintText: hint,
-          hintStyle: const TextStyle(color: Colors.grey),
-          labelText: title,
-          labelStyle: const TextStyle(color: Colors.teal),
         ),
       ),
     );
   }
 
-  Widget buildDropdownCard(String title, List<String> items, String selectedValue, Function(String?) onChanged) {
+  Widget buildDropdownCard(String label, List<String> items, String selectedItem, void Function(String?) onChanged) {
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
       ),
       elevation: 4,
-      child: DropdownButtonFormField<String>(
-        value: selectedValue,
-        items: items.map((String item) {
-          return DropdownMenuItem<String>(
-            value: item,
-            child: Text(item),
-          );
-        }).toList(),
-        decoration: InputDecoration(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(color: Colors.teal, width: 1.0),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(color: Colors.teal, width: 1.0),
-          ),
-          labelText: title,
-          labelStyle: const TextStyle(color: Colors.teal),
+      child: ListTile(
+        title: Text(
+          label,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        onChanged: onChanged,
+        subtitle: DropdownButton<String>(
+          isExpanded: true,
+          value: selectedItem,
+          onChanged: onChanged,
+          items: items.map((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget buildPreviewRow(String label, String content) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "$label: ",
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          Expanded(
+            child: Text(content),
+          ),
+        ],
       ),
     );
   }

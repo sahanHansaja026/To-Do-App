@@ -9,7 +9,6 @@ class DatabaseMethods {
   Future<void> addTaskDetails(Map<String, dynamic> taskInfoMap, String id) async {
     try {
       await _firestore.collection("Tasks").doc(id).set(taskInfoMap);
-      // Success toast message
       Fluttertoast.showToast(
         msg: "Task added successfully",
         toastLength: Toast.LENGTH_SHORT,
@@ -19,7 +18,6 @@ class DatabaseMethods {
         fontSize: 16.0,
       );
     } catch (e) {
-      // Error toast message
       Fluttertoast.showToast(
         msg: "Failed to add task: $e",
         toastLength: Toast.LENGTH_LONG,
@@ -33,23 +31,10 @@ class DatabaseMethods {
 
   // Function to get task details as a stream of snapshots
   Stream<QuerySnapshot> getTaskDetails() {
-    try {
-      return _firestore.collection("Tasks").snapshots();
-    } catch (e) {
-      Fluttertoast.showToast(
-        msg: "Failed to fetch tasks: $e",
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.CENTER,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-      throw Exception("Error fetching task details: $e");
-    }
+    return _firestore.collection("Tasks").snapshots();
   }
 }
 
-// ignore: use_key_in_widget_constructors
 class TaskList extends StatelessWidget {
   final DatabaseMethods databaseMethods = DatabaseMethods();
 
@@ -86,28 +71,21 @@ class TaskList extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 elevation: 4,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
+                child: ListTile(
+                  title: Text(
+                    "Task Title: ${task['Title']}",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        "Task Title: ${task['Title']}",
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
                       Text("Deadline: ${task['Deadline']}"),
-                      const SizedBox(height: 8),
                       Text("Priority: ${task['Priority']}"),
-                      const SizedBox(height: 8),
                       Text("Description: ${task['Description']}"),
-                      const SizedBox(height: 8),
                       Text("Category: ${task['Category']}"),
                     ],
                   ),
+                  isThreeLine: true,
                 ),
               );
             },

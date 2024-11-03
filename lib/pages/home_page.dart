@@ -4,6 +4,7 @@ import 'package:taskmanagerr/components/my_drawer.dart';
 import 'package:taskmanagerr/pages/add_task_page.dart';
 import 'package:taskmanagerr/pages/taskdeatail_page.dart';
 import 'package:intl/intl.dart';
+import 'package:taskmanagerr/services/auth/auth_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,10 +14,11 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final AuthService authService = AuthService();
   List<Map<String, dynamic>> tasks = [];
   List<Map<String, dynamic>> filteredTasks = [];
   bool isLoading = true;
-  String filter = 'All'; // Default filter is "All"
+  String filter = 'All';
 
   @override
   void initState() {
@@ -25,14 +27,27 @@ class _HomePageState extends State<HomePage> {
   }
 
   void fetchTasks() async {
+    final userEmail = authService.getUserEmail();
+    // ignore: unnecessary_null_comparison
+    if (userEmail == null) return; // Ensure user is logged in
+
     setState(() => isLoading = true);
-    QuerySnapshot querySnapshot =
-        await FirebaseFirestore.instance.collection("tasks").get();
-    tasks = querySnapshot.docs
-        .map((doc) => doc.data() as Map<String, dynamic>)
-        .toList();
-    applyFilter(); // Apply filter after fetching tasks
-    setState(() => isLoading = false);
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection("tasks")
+          .where("userEmail", isEqualTo: userEmail)
+          .get();
+
+      tasks = querySnapshot.docs
+          .map((doc) => doc.data() as Map<String, dynamic>)
+          .toList();
+      applyFilter(); // Apply filter after fetching tasks
+    } catch (e) {
+      // ignore: avoid_print
+      print("Error fetching tasks: $e");
+    } finally {
+      setState(() => isLoading = false);
+    }
   }
 
   void applyFilter() {
@@ -41,13 +56,11 @@ class _HomePageState extends State<HomePage> {
       if (filter == 'All') {
         filteredTasks = tasks;
       } else if (filter == 'Completed') {
-        // Filter tasks where deadline has passed
         filteredTasks = tasks.where((task) {
           final deadline = _parseDeadline(task['deadline']);
           return deadline != null && deadline.isBefore(now);
         }).toList();
       } else if (filter == 'Pending') {
-        // Filter tasks where deadline is in the future
         filteredTasks = tasks.where((task) {
           final deadline = _parseDeadline(task['deadline']);
           return deadline != null && deadline.isAfter(now);
@@ -56,12 +69,12 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // Helper function to parse deadline from string to DateTime
   DateTime? _parseDeadline(String? deadlineString) {
     if (deadlineString == null) return null;
     try {
       return DateFormat("yyyy-MM-dd'T'HH:mm:ss.sss HH:mm").parse(deadlineString);
     } catch (e) {
+      // ignore: avoid_print
       print("Error parsing deadline: $e");
       return null;
     }
@@ -97,7 +110,6 @@ class _HomePageState extends State<HomePage> {
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
-                      // Search Bar
                       TextField(
                         decoration: InputDecoration(
                           hintText: "Search tasks...",
@@ -110,7 +122,6 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // Task Filter Buttons
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
@@ -120,7 +131,6 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      // Task List
                       Expanded(
                         child: ListView.builder(
                           itemCount: filteredTasks.length,
@@ -141,13 +151,13 @@ class _HomePageState extends State<HomePage> {
             ),
           );
         },
+        // ignore: sort_child_properties_last
         child: const Icon(Icons.add),
         backgroundColor: const Color.fromARGB(255, 15, 78, 188),
       ),
     );
   }
 
-  // Helper method to build filter buttons with highlighting based on the current filter
   Widget _buildFilterButton(String label, String filterValue) {
     return ElevatedButton(
       onPressed: () {
@@ -174,7 +184,6 @@ class TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Extract date and time from the deadline string
     String deadlineDate = "";
     String deadlineTime = "";
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskmanagerr/components/my_drawer_title.dart';
+import 'package:taskmanagerr/pages/calender_page.dart';
 import 'package:taskmanagerr/pages/settings_page.dart';
 import 'package:taskmanagerr/services/auth/auth_service.dart';
 
@@ -74,7 +75,17 @@ class MyDrawer extends StatelessWidget {
             },
           ),
 
-
+          MyDrawerTitle(
+            text: "C A L E N D A R",
+            icon: Icons.calendar_month,
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CalendarPage()),
+              );
+            },
+          ),
 
           const Spacer(),
           // logout list title
