@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:taskmanagerr/services/database/edit_task_page.dart';
-import 'package:taskmanagerr/services/database/task_service.dart'; // Ensure this import points to your TaskService
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class EditTaskPage extends StatefulWidget {
   final Map<String, dynamic> task;
@@ -9,167 +8,201 @@ class EditTaskPage extends StatefulWidget {
   const EditTaskPage({super.key, required this.task});
 
   @override
+  // ignore: library_private_types_in_public_api
   _EditTaskPageState createState() => _EditTaskPageState();
 }
 
 class _EditTaskPageState extends State<EditTaskPage> {
-  final _formKey = GlobalKey<FormState>();
-  late TextEditingController _taskNameController;
+  late TextEditingController _nameController;
   late TextEditingController _descriptionController;
   late TextEditingController _deadlineController;
-  String? _selectedPriority;
-  String? _selectedCategory;
 
-  final List<String> categories = ["Select Category", "Assignment", "Project", "Study", "Personal"];
+  String _selectedCategory = "Select Category";
+  String _selectedPriority = "Select Priority";
+
+  final List<String> categories = [
+    "Select Category",
+    "Assignment",
+    "Project",
+    "Study",
+    "Personal"
+  ];
   final List<String> priorities = ["Select Priority", "High", "Medium", "Low"];
 
   @override
   void initState() {
     super.initState();
-    _taskNameController = TextEditingController(text: widget.task['taskName'] ?? '');
-    _descriptionController = TextEditingController(text: widget.task['description'] ?? '');
-    _deadlineController = TextEditingController(text: widget.task['deadline'] ?? '');
-    _selectedPriority = widget.task['priority'] ?? 'Medium';
-    _selectedCategory = widget.task['category'] ?? 'General';
+    _nameController =
+        TextEditingController(text: widget.task['taskName'] ?? '');
+    _descriptionController =
+        TextEditingController(text: widget.task['description'] ?? '');
+    _deadlineController =
+        TextEditingController(text: widget.task['deadline'] ?? '');
+
+    _selectedCategory = widget.task['category'] ?? "Select Category";
+    _selectedPriority = widget.task['priority'] ?? "Select Priority";
   }
 
   @override
   void dispose() {
-    _taskNameController.dispose();
+    _nameController.dispose();
     _descriptionController.dispose();
     _deadlineController.dispose();
     super.dispose();
   }
 
-  Future<void> _selectDeadline(BuildContext context) async {
-    DateTime? selectedDate = await showDatePicker(
+  Future<void> _pickDeadline() async {
+    DateTime? date = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
     );
 
-    if (selectedDate != null) {
-      TimeOfDay? selectedTime = await showTimePicker(
+    if (date != null) {
+      TimeOfDay? time = await showTimePicker(
+        // ignore: use_build_context_synchronously
         context: context,
         initialTime: TimeOfDay.now(),
       );
 
-      if (selectedTime != null) {
-        setState(() {
-          _deadlineController.text =
-              "${DateFormat('yyyy-MM-dd').format(selectedDate)} ${selectedTime.hour}:${selectedTime.minute}";
-        });
+      if (time != null) {
+        DateTime dateTime =
+            DateTime(date.year, date.month, date.day, time.hour, time.minute);
+        _deadlineController.text =
+            dateTime.toIso8601String().substring(0, 19).replaceFirst('T', ' ');
       }
     }
   }
 
-  Future<void> _saveTask() async {
-    if (_formKey.currentState!.validate()) {
-      final updatedTask = {
-        'taskName': _taskNameController.text.isNotEmpty ? _taskNameController.text : "No Task Name",
-        'description': _descriptionController.text.isNotEmpty ? _descriptionController.text : "No Description",
-        'deadline': _deadlineController.text.isNotEmpty ? _deadlineController.text : "No Deadline",
-        'priority': _selectedPriority != null && _selectedPriority != "Select Priority" ? _selectedPriority : "Medium",
-        'category': _selectedCategory != null && _selectedCategory != "Select Category" ? _selectedCategory : "General",
-      };
+  void _updateTask() async {
+    String taskId = widget.task['taskId'];
+    Map<String, dynamic> updatedTask = {
+      'taskName': _nameController.text.trim(),
+      'description': _descriptionController.text.trim(),
+      'deadline': _deadlineController.text.trim(),
+      'priority': _selectedPriority,
+      'category': _selectedCategory,
+    };
 
-      try {
-        await TaskService().updateTask(widget.task['id'], updatedTask);
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Task updated successfully")),
-        );
-      } catch (e) {
-        _showErrorDialog("Failed to update task: $e");
-      }
+    try {
+      await FirebaseFirestore.instance
+          .collection('tasks')
+          .doc(taskId)
+          .update(updatedTask);
+      Fluttertoast.showToast(
+        msg: "Task updated successfully",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      // ignore: use_build_context_synchronously
+      Navigator.of(context).pop();
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: "Failed to update task: $e",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.CENTER,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
     }
-  }
-
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Error"),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text("OK"),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Task'),
+        title: const Text("Edit Task",style: TextStyle(
+          fontWeight: FontWeight.bold,
+        ),),
         backgroundColor: const Color.fromARGB(255, 2, 56, 255),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
+        child: SingleChildScrollView(
+          child: Column(
             children: [
               _buildTextField(
-                controller: _taskNameController,
-                label: 'Task Name',
-                icon: Icons.title,
-              ),
+                  controller: _nameController,
+                  label: "Task Name",
+                  icon: Icons.title),
               const SizedBox(height: 16),
               _buildTextField(
                 controller: _descriptionController,
-                label: 'Description',
+                label: "Description",
                 icon: Icons.description,
+                maxLines: 5,
               ),
               const SizedBox(height: 16),
-              GestureDetector(
-                onTap: () => _selectDeadline(context),
-                child: AbsorbPointer(
-                  child: _buildTextField(
-                    controller: _deadlineController,
-                    label: 'Deadline (YYYY-MM-DD HH:mm)',
-                    icon: Icons.calendar_today,
-                  ),
+              TextField(
+                controller: _deadlineController,
+                readOnly: true,
+                decoration: InputDecoration(
+                  labelText: "Deadline",
+                  prefixIcon: const Icon(Icons.calendar_today),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                onTap: _pickDeadline,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _selectedPriority,
+                items: priorities.map((priority) {
+                  return DropdownMenuItem(
+                      value: priority, child: Text(priority));
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedPriority = value ?? "Select Priority";
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: "Priority",
+                  prefixIcon: const Icon(Icons.priority_high),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
               ),
               const SizedBox(height: 16),
-              _buildDropdown(
-                label: 'Priority',
-                value: _selectedPriority,
-                items: priorities,
-                icon: Icons.priority_high,
-                onChanged: (newValue) {
-                  setState(() {
-                    _selectedPriority = newValue;
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildDropdown(
-                label: 'Category',
+              DropdownButtonFormField<String>(
                 value: _selectedCategory,
-                items: categories,
-                icon: Icons.category,
-                onChanged: (newValue) {
+                items: categories.map((category) {
+                  return DropdownMenuItem(
+                      value: category, child: Text(category));
+                }).toList(),
+                onChanged: (value) {
                   setState(() {
-                    _selectedCategory = newValue;
+                    _selectedCategory = value ?? "Select Category";
                   });
                 },
+                decoration: InputDecoration(
+                  labelText: "Category",
+                  prefixIcon: const Icon(Icons.category),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 32),
               ElevatedButton(
-                onPressed: _saveTask,
-                child: const Text('Save Changes'),
-              ),
+                onPressed: _updateTask,
+                style: ElevatedButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  textStyle: const TextStyle(fontSize: 18),
+                  backgroundColor: const Color.fromARGB(255, 43, 125, 239),
+                ),
+                child: const Text(
+                  "Update Task",
+                  style: TextStyle(
+                    color: Colors.white, // Set the text color here
+                  ),
+                ),
+              )
             ],
           ),
         ),
@@ -177,64 +210,20 @@ class _EditTaskPageState extends State<EditTaskPage> {
     );
   }
 
-  Widget _buildTextField({required TextEditingController controller, required String label, required IconData icon}) {
-    return Row(
-      children: [
-        Icon(icon, color: const Color.fromARGB(255, 2, 56, 255)),
-        const SizedBox(width: 8),
-        Expanded(
-          child: TextFormField(
-            controller: controller,
-            decoration: InputDecoration(
-              labelText: label,
-              border: const OutlineInputBorder(),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter $label';
-              }
-              return null;
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDropdown({
+  Widget _buildTextField({
+    required TextEditingController controller,
     required String label,
-    required String? value,
-    required List<String> items,
     required IconData icon,
-    required ValueChanged<String?> onChanged,
+    int maxLines = 1,
   }) {
-    return Row(
-      children: [
-        Icon(icon, color: const Color.fromARGB(255, 2, 56, 255)),
-        const SizedBox(width: 8),
-        Expanded(
-          child: DropdownButtonFormField<String>(
-            decoration: InputDecoration(
-              labelText: label,
-              border: const OutlineInputBorder(),
-            ),
-            value: value,
-            items: items.map((String item) {
-              return DropdownMenuItem<String>(
-                value: item,
-                child: Text(item),
-              );
-            }).toList(),
-            onChanged: onChanged,
-            validator: (value) {
-              if (value == null || value == "Select $label") {
-                return 'Please select a $label';
-              }
-              return null;
-            },
-          ),
-        ),
-      ],
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      ),
     );
   }
 }
