@@ -1,5 +1,6 @@
-// ignore_for_file: unnecessary_null_comparison
+// ignore_for_file: unnecessary_null_comparison, avoid_print
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:taskmanagerr/pages/edit_page.dart';
@@ -41,7 +42,7 @@ class TaskDetails extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Deadline
+            // Deadline Date
             _buildDetailCard(
               icon: Icons.calendar_today,
               label: "Deadline Date",
@@ -142,7 +143,6 @@ class TaskDetails extends StatelessWidget {
 
   // Method to get task detail safely
   String getTaskDetail(String key) {
-    // Check if the key exists and is not null; if null, return "Not set"
     return (task[key] != null && task[key] is String) ? task[key] : 'Not set';
   }
 
@@ -170,23 +170,46 @@ class TaskDetails extends StatelessWidget {
   }
 
   // Method to delete the task from Firebase
-  void _deleteTask(BuildContext context) async {
-    try {
-      // Assuming task contains a unique 'id' key for the Firebase document ID
-      await tasksRef.child(task['id']).remove();
-      // ignore: use_build_context_synchronously
-      Navigator.of(context).pop(); // Close the dialog
-      // ignore: use_build_context_synchronously
-      Navigator.of(context).pop(); // Go back to the previous screen
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Task deleted successfully")),
-      );
-    } catch (error) {
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to delete task: $error")),
-      );
-    }
+void _deleteTask(BuildContext context) async {
+  final String? taskId = task['taskId'];
+
+  print("Attempting to delete task with ID: $taskId");
+
+  if (taskId == null || taskId.isEmpty) {
+    print("Task ID is missing or invalid");
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Task ID is missing or invalid")),
+    );
+    return;
   }
+
+  try {
+    // Deleting the task from Firestore
+    await FirebaseFirestore.instance.collection('tasks').doc(taskId).delete();
+    print("Task deleted successfully");
+    // ignore: use_build_context_synchronously
+    Navigator.of(context).pop(); // Close the confirmation dialog
+    // ignore: use_build_context_synchronously
+    Navigator.of(context).pop(); // Navigate back to the previous screen
+    // ignore: use_build_context_synchronously
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Task deleted successfully")),
+    );
+  } catch (error) {
+    print("Error deleting task: $error");
+    // ignore: use_build_context_synchronously
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Failed to delete task: $error")),
+    );
+  }
+
+  // Verify if the task still exists
+  final snapshot = await FirebaseFirestore.instance.collection('tasks').doc(taskId).get();
+  if (!snapshot.exists) {
+    print("Task with ID $taskId has been successfully deleted.");
+  } else {
+    print("Task with ID $taskId still exists.");
+  }
+}
+
 }

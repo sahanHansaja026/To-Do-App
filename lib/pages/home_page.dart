@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:taskmanagerr/components/my_drawer.dart';
 import 'package:taskmanagerr/pages/add_task_page.dart';
-import 'package:taskmanagerr/pages/taskdeatail_page.dart';
+
 import 'package:intl/intl.dart';
+import 'package:taskmanagerr/pages/taskdeatail_page.dart';
 import 'package:taskmanagerr/services/auth/auth_service.dart';
 
 class HomePage extends StatefulWidget {
@@ -72,7 +73,8 @@ class _HomePageState extends State<HomePage> {
   DateTime? _parseDeadline(String? deadlineString) {
     if (deadlineString == null) return null;
     try {
-      return DateFormat("yyyy-MM-dd'T'HH:mm:ss.sss HH:mm").parse(deadlineString);
+      return DateFormat("yyyy-MM-dd'T'HH:mm:ss.sss HH:mm")
+          .parse(deadlineString);
     } catch (e) {
       // ignore: avoid_print
       print("Error parsing deadline: $e");
@@ -169,8 +171,7 @@ class _HomePageState extends State<HomePage> {
       style: ElevatedButton.styleFrom(
         backgroundColor:
             filter == filterValue ? Colors.blueAccent : Colors.grey[300],
-        foregroundColor:
-            filter == filterValue ? Colors.white : Colors.black,
+        foregroundColor: filter == filterValue ? Colors.white : Colors.black,
       ),
       child: Text(label),
     );
