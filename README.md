@@ -10,8 +10,8 @@ A task management app built with **Flutter** and **Firebase** that helps users e
 - 📂 **Cloud Firestore** - Store tasks in real-time.
 - 🎨 **Intuitive UI** - Clean and user-friendly design.
 
-## 📷 Screenshots
-![App Screenshot](https://via.placeholder.com/800x400)
+## 📷 Road Map
+![App Screenshot](https://github.com/sahan026/images/blob/main/Screenshot%202025-02-13%20185305.png)
 
 ## 📌 Tech Stack
 - **Flutter** - Frontend framework
