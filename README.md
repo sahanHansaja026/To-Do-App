@@ -19,7 +19,7 @@ A task management app built with **Flutter** and **Firebase** that helps users e
 - **Dart** - Programming language
 
 ## 🎨 Figma Design
-[Click here to view the design](https://www.figma.com/proto/b2P09YkPC66FEorCnmAALe/To-Do-App?node-id=6-53&t=7V0m94K0jJOVeUE5-1)
+[Click here to view the design](https://www.figma.com/design/b2P09YkPC66FEorCnmAALe/To-Do-App?node-id=0-1&t=qDoRw3O7qLFtjNS1-1)
 
 ## 📦 Installation
 1. Clone the repository:
